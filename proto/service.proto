@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package generated;
+
+option go_package = "github.com/gozephyr/transportx/proto/generated";
+
+// TransportService defines the gRPC service for transport operations
+service TransportService {
+  // Send sends a single message
+  rpc Send(Message) returns (Message) {}
+  
+  // Receive receives a single message
+  rpc Receive(Empty) returns (Message) {}
+  
+  // BatchSend sends multiple messages
+  rpc BatchSend(BatchMessage) returns (Empty) {}
+  
+  // BatchReceive receives multiple messages
+  rpc BatchReceive(BatchRequest) returns (BatchMessage) {}
+
+  // StreamMessages is a bidirectional streaming RPC
+  rpc StreamMessages(stream Message) returns (stream Message);
+}
+
+// Message represents a single message with data payload
+message Message {
+  bytes data = 1;
+}
+
+// BatchMessage represents multiple messages
+message BatchMessage {
+  repeated Message messages = 1;
+}
+
+// BatchRequest represents a request for batch operations
+message BatchRequest {
+  int32 batch_size = 1;
+}
+
+// Empty represents an empty message
+message Empty {} 
