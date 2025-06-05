@@ -1,3 +1,4 @@
+// Package http provides HTTP helpers for TransportX, including adapters and roundtrippers.
 package http
 
 import (
@@ -59,6 +60,9 @@ func HTTPAdapter(handler HandlerFunc) http.HandlerFunc {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write(resp)
+		if _, writeErr := w.Write(resp); writeErr != nil {
+			// Optionally log the error or write a generic error
+			http.Error(w, "failed to write response", http.StatusInternalServerError)
+		}
 	}
 }

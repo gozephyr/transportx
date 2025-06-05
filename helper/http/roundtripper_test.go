@@ -45,6 +45,7 @@ func TestTransportxRoundTripperRoundtripSuccess(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	require.Equal(t, []byte("response"), body)
+	require.NoError(t, resp.Body.Close())
 }
 
 func TestTransportxRoundTripperRoundtripSendError(t *testing.T) {
@@ -53,8 +54,11 @@ func TestTransportxRoundTripperRoundtripSendError(t *testing.T) {
 
 	req, err := http.NewRequest("POST", "http://example.com", bytes.NewReader([]byte("input")))
 	require.NoError(t, err)
-	_, err = rt.RoundTrip(req)
+	resp, err := rt.RoundTrip(req)
 	require.Error(t, err)
+	if resp != nil {
+		require.NoError(t, resp.Body.Close())
+	}
 }
 
 func TestTransportxRoundTripperRoundtripReceiveError(t *testing.T) {
@@ -63,6 +67,9 @@ func TestTransportxRoundTripperRoundtripReceiveError(t *testing.T) {
 
 	req, err := http.NewRequest("POST", "http://example.com", bytes.NewReader([]byte("input")))
 	require.NoError(t, err)
-	_, err = rt.RoundTrip(req)
+	resp, err := rt.RoundTrip(req)
 	require.Error(t, err)
+	if resp != nil {
+		require.NoError(t, resp.Body.Close())
+	}
 }

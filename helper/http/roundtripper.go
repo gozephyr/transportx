@@ -1,3 +1,4 @@
+// Package http provides HTTP helpers for TransportX, including adapters and roundtrippers.
 package http
 
 import (
