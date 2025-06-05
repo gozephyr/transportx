@@ -142,6 +142,69 @@ func main() {
 
 ---
 
+## 🧰 HTTP Helpers (`helper/http`)
+
+TransportX provides additional helpers for seamless integration with the Go standard library and idiomatic HTTP workflows:
+
+### HTTPAdapter
+
+- **What:** Wraps your business logic as a `net/http` handler using a simple, testable function signature.
+- **Why:** Decouples your core logic from HTTP details, reduces boilerplate, and makes your code reusable across frameworks.
+- **How:**
+
+```go
+import (
+    "net/http"
+    helperhttp "github.com/gozephyr/transportx/helper/http"
+)
+
+func MyLogic(ctx context.Context, data []byte) ([]byte, error) {
+    // Your business logic here
+    return []byte("Hello from server!"), nil
+}
+
+func main() {
+    http.HandleFunc("/api", helperhttp.HTTPAdapter(MyLogic))
+    http.ListenAndServe(":8080", nil)
+}
+```
+
+### TransportxRoundTripper
+
+- **What:** A drop-in replacement for `http.RoundTripper` that uses TransportX's HTTP transport.
+- **Why:** Lets you use custom TransportX features (metrics, batching, retries, etc.) with any `http.Client`.
+- **How:**
+
+```go
+import (
+    "net/http"
+    "bytes"
+    txhttp "github.com/gozephyr/transportx/protocols/http"
+    helperhttp "github.com/gozephyr/transportx/helper/http"
+)
+
+func main() {
+    cfg := txhttp.NewConfig().WithServerAddress("example.com").WithPort(8080)
+    transport, err := txhttp.NewHTTPTransport(cfg)
+    if err != nil {
+        panic(err)
+    }
+    rt := helperhttp.NewTransportxRoundTripper(transport.(*txhttp.HTTPTransport))
+    client := &http.Client{Transport: rt}
+    resp, err := client.Post("http://example.com", "application/json", bytes.NewReader([]byte(`{"foo":"bar"}`)))
+    // ... handle resp and err ...
+}
+```
+
+**Benefits:**
+
+- Plug-and-play with any code using `http.Client` or `net/http` handlers
+- Enables custom TransportX features in standard Go HTTP workflows
+- Makes business logic easy to test and reuse
+- Foundation for adapters for other frameworks (Gin, Fiber, etc.)
+
+---
+
 ## ⚙️ Configuration Options
 
 ### 🌍 HTTP Config (`DefaultHTTPConfig()`)

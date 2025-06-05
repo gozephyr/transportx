@@ -12,10 +12,12 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/gozephyr/transportx"
+	helperhttp "github.com/gozephyr/transportx/helper/http"
 	"github.com/gozephyr/transportx/protocols"
 	httpx "github.com/gozephyr/transportx/protocols/http"
 )
@@ -270,4 +272,69 @@ func startExampleServer(t *testing.T) *http.Server {
 	t.Log("Server started")
 
 	return server
+}
+
+func TestHTTPAdapter_Integration(t *testing.T) {
+	// Start a test server using HTTPAdapter
+	handler := func(ctx context.Context, data []byte) ([]byte, error) {
+		return append([]byte("echo: "), data...), nil
+	}
+	ts := http.Server{
+		Addr:    ":18081",
+		Handler: http.HandlerFunc(helperhttp.HTTPAdapter(handler)),
+	}
+	go ts.ListenAndServe()
+	defer ts.Close()
+	// Give the server a moment to start
+	time.Sleep(100 * time.Millisecond)
+
+	resp, err := http.Post("http://localhost:18081", "text/plain", strings.NewReader("integration"))
+	if err != nil {
+		t.Fatalf("Failed to POST: %v", err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("Failed to read response: %v", err)
+	}
+	if string(body) != "echo: integration" {
+		t.Errorf("Unexpected response: %s", body)
+	}
+}
+
+type proxyTransport struct{}
+
+func (p *proxyTransport) Send(ctx context.Context, data []byte) error { return nil }
+func (p *proxyTransport) Receive(ctx context.Context) ([]byte, error) {
+	return []byte("rt: integration"), nil
+}
+
+func TestTransportxRoundTripper_Integration(t *testing.T) {
+	// Start a test server that echoes the request body
+	ts := http.Server{
+		Addr: ":18082",
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			data, _ := io.ReadAll(r.Body)
+			w.Write(append([]byte("rt: "), data...))
+		}),
+	}
+	go ts.ListenAndServe()
+	defer ts.Close()
+	// Give the server a moment to start
+	time.Sleep(100 * time.Millisecond)
+
+	rt := helperhttp.NewTransportxRoundTripper(&proxyTransport{})
+	client := &http.Client{Transport: rt}
+	resp, err := client.Post("http://localhost:18082", "text/plain", strings.NewReader("integration"))
+	if err != nil {
+		t.Fatalf("Failed to POST: %v", err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("Failed to read response: %v", err)
+	}
+	if string(body) != "rt: integration" {
+		t.Errorf("Unexpected response: %s", body)
+	}
 }
