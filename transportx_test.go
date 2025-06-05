@@ -71,3 +71,54 @@ func TestCreateUnsupportedTransports(t *testing.T) {
 	_, err = tx.CreateAMQP()
 	require.ErrorIs(t, err, errors.ErrUnsupportedTransport)
 }
+
+func TestNewClientHTTP(t *testing.T) {
+	cfg := http.NewConfig()
+	client, err := NewClient(TypeHTTP, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, client)
+}
+
+func TestNewClientGRPC(t *testing.T) {
+	cfg := grpc.NewConfig()
+	client, err := NewClient(TypeGRPC, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, client)
+}
+
+func TestNewClientUnsupported(t *testing.T) {
+	client, err := NewClient("unsupported", nil)
+	require.Error(t, err)
+	require.Nil(t, client)
+}
+
+func TestNewHTTPClient(t *testing.T) {
+	cfg := http.NewConfig()
+	client, err := NewHTTPClient(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, client)
+}
+
+func TestNewGRPCClient(t *testing.T) {
+	cfg := grpc.NewConfig()
+	client, err := NewGRPCClient(cfg)
+	require.NoError(t, err)
+	require.NotNil(t, client)
+}
+
+func TestSupportedProtocols(t *testing.T) {
+	protocols := SupportedProtocols()
+	require.Contains(t, protocols, TypeHTTP)
+	require.Contains(t, protocols, TypeGRPC)
+}
+
+func TestDefaultHTTPConfig(t *testing.T) {
+	cfg := DefaultHTTPConfig()
+	require.NotNil(t, cfg)
+	require.Equal(t, "http", cfg.Protocol)
+}
+
+func TestDefaultGRPCConfig(t *testing.T) {
+	cfg := DefaultGRPCConfig()
+	require.NotNil(t, cfg)
+}
